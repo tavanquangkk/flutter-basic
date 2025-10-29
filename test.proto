@@ -1,0 +1,697 @@
+syntax = "proto3";
+
+package reverse.v1;
+
+import "common/v1/common.proto";
+
+option java_outer_classname = "ReverseProto";
+option java_package = "jp.co.net.trial.shinise.grpc";
+
+service ReverseService {
+  // 開始チェック 同じ担当、違う返品日に未印刷データ有無チェック
+  rpc StartCheck(StartCheckRequest) returns (StartCheckResponse);
+  // 返品理由取得
+  rpc GetBranchType(GetBranchTypeRequest) returns (GetBranchTypeResponse);
+  // 返品タイプ取得
+  rpc GetAllowReasonCd(GetAllowReasonCdRequest) returns (GetAllowReasonCdResponse);
+  // 商品基本情報取得
+  rpc GetProdInfo(GetProdInfoRequest) returns (GetProdInfoResponse);
+  // 棚替指示取得
+  rpc GetTanagaeShiji(GetTanagaeShijiRequest) returns (GetTanagaeShijiResponse);
+  // 返品センター返品場合、管轄店舗以外の店舗かどうか判断
+  rpc GetDirectReturnInfo(GetDirectReturnInfoRequest) returns (GetDirectReturnInfoResponse);
+  // 前の商品登録
+  rpc InsertDate(InsertDateRequest) returns (InsertDateResponse);
+  // 当日日付取得
+  rpc GetSystemDate(GetSystemDateRequest) returns (GetSystemDateResponse);
+  // 返品の登録データ一覧の取得
+  rpc GetGoodsInfo(GetGoodsInfoRequest) returns (GetGoodsInfoResponse);
+  // 返品の登録データ一覧の数量修正
+  rpc UpdateReturnQty(UpdateReturnQtyRequest) returns (UpdateReturnQtyResponse);
+  // 返品の登録データ一覧の一行データを削除
+  rpc DelProById(DelProByIdRequest) returns (DelProByIdResponse);
+  // 返品一覧に返品日が違う場合、同じ日付へ変更
+  rpc UpdateReturnDate(UpdateReturnDateRequest) returns (UpdateReturnDateResponse);
+  // 個口数の返品先一覧取得
+  rpc GetLoginInfo(GetLoginInfoRequest) returns (GetLoginInfoResponse);
+  // 個口数修正
+  rpc UpdateBoxInfo(UpdateBoxInfoRequest) returns (UpdateBoxInfoResponse);
+  // 返品伝票作成と伝票印刷
+  rpc InsertPrint(InsertPrintRequest) returns (InsertPrintResponse);
+  // 印刷できない場合エラーメール
+  rpc SendErrorMail(SendErrorMailRequest) returns (SendErrorMailResponse);
+  // ベンダー名取得
+  rpc GetVenderInfo(GetVenderInfoRequest) returns (GetVenderInfoResponse);
+  // 再発行画面で、商品コードをスキャンしてベンダーコード取得
+  rpc GetJanVenderInfo(GetJanVenderInfoRequest) returns (GetJanVenderInfoResponse);
+  // 再印刷の伝票一覧取得
+  rpc GetSlipInfo(GetSlipInfoRequest) returns (GetSlipInfoResponse);
+  // 印刷結果にバグがあります。`v2.ReverseV2Service/InsertPrintSlipList`を利用してください
+  // 再印刷の伝票印刷
+  rpc InsertPrintSlipList(InsertPrintSlipListRequest) returns (InsertPrintSlipListResponse) {
+    option deprecated = true;
+  }
+  // 再印刷の伝票番号により商品明細取得
+  rpc GetGoodsInfoReissue(GetGoodsInfoReissueRequest) returns (GetGoodsInfoReissueResponse);
+  // 返品伝票の商品明細の数量修正
+  rpc UpdateReturnQtyReissue(UpdateReturnQtyReissueRequest) returns (UpdateReturnQtyReissueResponse);
+  // 終了ボタンを押して、該当担当の未印刷データ存在のチェック
+  rpc EndCheck(EndCheckRequest) returns (EndCheckResponse);
+  // 終了ボタンを押して、未印刷データ一括削除
+  rpc DelPrintInfo(DelPrintInfoRequest) returns (DelPrintInfoResponse);
+}
+
+message StartCheckRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message StartCheckResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 当日の日付
+  optional string day = 3;
+  // 未印刷データの存在可否
+  // 0: 未印刷データがない, 1: 未印刷データがある
+  optional string pacer_reverse_checkprintinfo = 4;
+}
+
+message GetBranchTypeRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message GetBranchTypeResponse {
+  optional string code = 1;
+  optional string message = 2;
+
+  // 店舗コード
+  optional string branch_code = 3;
+  // 店舗タイプ
+  // 0:本社, 1:店舗, 2:PC, 3:SLS, 4:その他
+  optional common.v1.BranchType branch_type = 4;
+
+  repeated ReturnReason return_reason = 5;
+
+  message ReturnReason {
+    // 返品理由コード
+    optional string return_reason_code = 1;
+    // 返品理由名
+    optional string return_reason_name = 2;
+  }
+}
+
+message GetAllowReasonCdRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message GetAllowReasonCdResponse {
+  optional string code = 1;
+  optional string message = 2;
+  repeated AllowReason allow_reason = 3;
+  repeated ReturnType return_type = 4;
+
+  message AllowReason {
+    // 返品タイプリスト
+    optional int32 allow_reason_code = 1;
+  }
+
+  message ReturnType {
+    // 返品タイプコード (既存 REASON_NO)
+    optional int32 return_type_id = 1;
+    // 返品タイプ名 (既存 REASON_NAME)
+    optional string return_type_name = 2;
+  }
+}
+
+message GetProdInfoRequest {
+  // 返品理由コード
+  // 「返品理由取得」参照
+  optional int32 reason_code = 1;
+  // 返品理由名
+  optional string reason_name = 2;
+  // 商品コード
+  optional string product_code = 3;
+  // 店舗コード
+  optional string store_code = 4;
+  // 返品タイプコード 空白可能
+  // 「返品タイプ取得」参照
+  optional string return_type_id = 5;
+}
+
+message GetProdInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 商品コード
+  optional string jan = 3;
+  // REVDATE_START
+  // 返品の出来ない範囲　開始日
+  optional int32 return_forbidden_start = 4;
+  // REVDATE_END
+  // 返品の出来ない範囲　終了日
+  optional int32 return_forbidden_end = 5;
+  ProductInfo product_info = 6;
+  ProductSaleInfo product_sale_info = 7;
+
+  message ProductInfo {
+    // 商品名
+    optional string prd_nm = 1;
+    // 規格
+    optional string sub_nm = 2;
+    // ブランド
+    optional string brand = 3;
+    // カラー
+    optional string prd_color = 4;
+    // サイズ
+    optional string prd_size = 5;
+    // ベンダーコード
+    optional int32 supplier_code = 6 [deprecated = true];
+    // ベンダー名
+    optional string vender_name = 7;
+    // 部門コード
+    optional int32 department_code = 8;
+    // メーカー品番
+    optional string maker_prod_code = 9;
+    // 商品入数(内箱)
+    optional int32 inner_case_qty = 10;
+    // 発注単位
+    optional int32 order_unit = 11;
+    // 生鮮商品か否か
+    // 0：非生鮮商品と25JANと28JAN, 1：生鮮商品
+    optional bool is_fresh = 12;
+    // ディビジョンコード
+    optional int32 division_code = 13;
+    // ディビジョン名
+    optional string division_name = 14;
+    // 部門名
+    optional string department_name = 15;
+    // 物流タイプ
+    // 0:ストック, 1:スルー, 2:グロス, 3:店着, 4:預託
+    optional ShippingType shipping_type = 16;
+
+    // 物流タイプ
+    // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+    enum ShippingType {
+      // ストック
+      SHIPPING_TYPE_STOCK = 0;
+      // スルー
+      SHIPPING_TYPE_THROUGH = 1;
+      // グロス
+      SHIPPING_TYPE_GROSS = 2;
+      // 店着
+      SHIPPING_TYPE_STORE_ARRIVAL = 3;
+      // 預託
+      SHIPPING_TYPE_DEPOSIT = 4;
+    }
+
+    // 納品先コード
+    optional int32 storehouse_code = 17;
+    // 納品先の名称
+    optional string storehouse_name = 18;
+    // 返品理由コード
+    optional int32 return_reason_code = 19;
+    // 返品理由名
+    optional string return_reason_name = 20;
+    // 返品場所のアドレス
+    optional string returned_address = 21;
+    // 返品場所の電話番号
+    optional string returned_tel = 22;
+    // 返品場所のFAX
+    optional string returned_fax = 23;
+    // 返品場所の郵便番号
+    optional string returned_post = 24;
+    // 返品場所の宅配便(例:佐川急便)
+    optional string transport_name = 25;
+    // 原価
+    optional double cost_price = 26;
+    // 売価 小数点1桁
+    optional double sales_price = 27;
+    // 返品タイプ (既存 returncd)
+    // -1:返品不可, 3:納品センターへ返品, 4:返品(VDR引取), 5:直接返品,
+    // 6:返品センターへ返品, 21:おまかせ返品, 22:返品スルー, 23:返品(捨てる)
+    optional int32 return_type_id = 28;
+    // 返品タイプ名称 (既存 returnname)
+    optional string return_type_name = 29;
+    // 返品フラグ
+    // 0:スタ未登録, 1:返品可, 2:返品不可
+    optional common.v1.VenderFlag vender_flag = 30;
+    // 返品メモ：画面上でディフォルで表示した返品情報
+    optional string remarks = 31;
+    // 返品メモ：3 納品センターへ返品→remarks01
+    optional string remarks_01 = 32;
+    // 返品メモ：4 返品(VDR引取)→remarks02
+    optional string remarks_02 = 33;
+    // 返品メモ：5 直接返品→remarks03
+    optional string remarks_03 = 34;
+    // 返品メモ：6 返品センターへ返品→remarks04
+    optional string remarks_04 = 35;
+    // 返品メモ：21 おまかせ返品→remarks05
+    optional string remarks_05 = 36;
+    // 返品メモ：22 返品スルー→remarks06
+    optional string remarks_06 = 37;
+    // 返品メモ：23 返品グロス→remarks07
+    optional string remarks_07 = 38;
+    // 納品先コード（調達からのstorehouseCD）
+    optional int32 storehouse_code_04 = 39;
+    // 納品先コード「returndb.mst_branchreturncenter」からの返品センターa
+    optional int32 storehouse_code_01 = 40;
+    // 返品センター判断 (既存 center_flg)
+    // 0: true 返品センターあり, 1: false 返品センターなし（返品数量に返品先無表示）
+    optional bool is_return_center = 41 [deprecated = true];
+    // 返品タイプ (return_type_idと同じ値)
+    // -1:返品不可, 3:納品センターへ返品, 4:返品(VDR引取), 5:直接返品,
+    // 6:返品センターへ返品, 21:おまかせ返品, 22:返品スルー, 23:返品(捨てる)
+    optional int32 reason_flag = 42  [deprecated = true];
+    // 返品タイプ名称 (return_type_nameと同じ名称)
+    optional string reason_name = 43;
+  }
+
+  message ProductSaleInfo {
+    // 原価 小数点2桁
+    optional double cost_price = 1 [deprecated = true];
+    // 売価 小数点2桁
+    optional double standard_price = 2 [deprecated = true];
+    // 返品数量の基準値
+    optional int32 sale_num = 3;
+    // 返品数量の最大基準値
+    optional int32 max_sale_num = 4;
+    // 原価の基準値 (比較:基準値と返品数量*原価)
+    optional int32 cost_sum = 5 [deprecated = true];
+    // 原価の最大基準値 (比較:基準値と返品数量*原価)
+    optional int32 max_cost_sum = 6 [deprecated = true];
+    // 売価の基準値 (比較:基準値と返品数量*売価)
+    optional int32 sales_sum = 7 [deprecated = true];
+    // 売価の最大基準値 (比較:基準値と返品数量*売価)
+    optional int32 max_sales_sum = 8 [deprecated = true];
+  }
+
+}
+
+message GetTanagaeShijiRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // 商品コード
+  optional string product_code = 2;
+}
+
+message GetTanagaeShijiResponse {
+  optional string code = 1;
+  optional string message = 2;
+  BranchType branch_type = 3;
+
+  message BranchType {
+    // 返品理由名
+    optional string reason_name = 1 [deprecated = true];
+    // 商品コード
+    optional string product_code = 2 [deprecated = true];
+    // 店舗コード
+    optional int32 branch_code = 3 [deprecated = true];
+    // 返品タイプコード
+    optional string return_type_id = 4;
+  }
+}
+
+message GetDirectReturnInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message GetDirectReturnInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  DirectReturnInfo direct_return_info = 3;
+
+  message DirectReturnInfo {
+    // 返品センター判断 (既存 flg)
+    // 0: false 返品センターなし, 1: true 返品センターあり
+    optional bool is_return_center = 1;
+    // is_return_center=0: 返品メモに該当するremarksの表示, is_return_center=1: 返品メモ表示なし
+    optional string remarks = 2;
+  }
+
+}
+
+message InsertDateRequest {
+  // 商品コード
+  optional string product_code = 1;
+  // 返品フラグ
+  // 0:スタ未登録, 1:返品可, 2:返品不可
+  optional common.v1.VenderFlag vender_flag = 2;
+  // 返品理由コード
+  optional int32 return_reason_code = 3;
+  // 返品理由名
+  optional string return_reason_name = 4;
+  // 返品タイプコード (既存 selectReasonNameNo)
+  optional int32 return_type_id = 5;
+  // 返品日付
+  optional common.v1.Date reverse_date = 6;
+  // 店舗コード
+  optional string store_code = 7;
+  // 次の商品コード
+  optional string product_code_new = 8;
+  // 返品タイプ名
+  optional string return_type_name = 9;
+  // 返品数量
+  optional double reverse_number = 10;
+}
+
+message InsertDateResponse {
+  optional string code = 1;
+  optional string message = 2;
+}
+
+message GetSystemDateRequest {
+  // 店舗コード取得
+  optional string store_code = 1;
+}
+
+message GetSystemDateResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // サーバーの当日日付
+  optional string date_code = 3;
+}
+
+message GetGoodsInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message GetGoodsInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  repeated GoodsInfo goods_info = 3;
+  message GoodsInfo {
+    // 返品テーブルの連番ID
+    optional int32 id = 1;
+    // 商品コード
+    optional string prod_code = 2;
+    // 商品名
+    optional string prod_name = 3;
+    // カラー
+    optional string prod_color = 4 [deprecated = true];
+    // サイズ
+    optional string prod_size = 5 [deprecated = true];
+    // 返品日
+    optional string rev_date = 6;
+    // ベンダー名
+    optional string vender_name = 7;
+    // 返品数量
+    optional double quantity = 8;
+    // 返品売価合計値
+    optional double sales_sum = 9;
+    // 売価
+    optional double sales_price = 10;
+    // 返品理由
+    optional string reason_name = 11;
+  }
+}
+
+message UpdateReturnQtyRequest {
+  optional int32 id = 1;
+  // 店舗コード
+  optional string store_code = 2;
+  // 修正したい数量
+  optional double return_qty = 3;
+}
+
+message UpdateReturnQtyResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 今回修正したデータの件数
+  optional int32 pacer_reverse_updatereturnqty = 3;
+}
+
+message DelProByIdRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // 返品テーブルの連番ID (既存 pro_cd)
+  optional int32 id = 2;
+}
+
+message DelProByIdResponse {
+  optional string code = 1;
+  optional string message = 2;
+}
+
+message UpdateReturnDateRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message UpdateReturnDateResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 今回修正したデータの件数
+  optional int32 pacer_reverse_updatereturndate = 3;
+}
+
+message GetLoginInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // 返品日
+  optional common.v1.Date return_date = 2;
+}
+
+message GetLoginInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  repeated LoginInfo login_info = 3;
+
+  message LoginInfo {
+    // 返品日
+    optional string return_date = 1 [deprecated = true];
+    // ベンダーコード
+    optional int32 supplier_code = 2;
+    // 返品タイプコード(既存 returntype)
+    optional int32 return_type_id = 3;
+    // 返品先名
+    optional string return_saki = 4;
+    // 個口数
+    optional string box_num = 5;
+    // 返品詳細
+    optional string return_detail = 6;
+  }
+}
+
+message UpdateBoxInfoRequest {
+  // 返品タイプコード(既存 returntype)
+  optional int32 return_type_id = 1;
+  // 個口数
+  optional int32 box_number = 2;
+  // 店舗コード
+  optional string store_code = 3;
+  // ベンダーコード
+  optional int32 supplier_code = 4;
+}
+
+message UpdateBoxInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 今回修正したデータの件数
+  optional int32 pacer_reverse_updateboxinfo_ver6 = 3;
+}
+
+message InsertPrintRequest {
+  // 返品説明書を印刷するフラグ ()
+  // 0: false 返品説明書印刷しない, 1: true 返品説明書印刷
+  optional bool is_instruction_print = 1;
+  // 店舗コード
+  optional string store_code = 2;
+  // 返品日
+  optional common.v1.Date return_date = 3;
+}
+
+message InsertPrintResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 印刷ID
+  optional int32 print_id = 3;
+}
+
+message SendErrorMailRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // 店舗パソコンのIPアドレス
+  optional string print_ip = 2;
+  // エラーメッセージ
+  optional string error_msg = 3;
+}
+
+message SendErrorMailResponse {
+  optional string code = 1;
+  optional string message = 2;
+}
+
+message GetVenderInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // ベンダーコード
+  optional int32 vender_code = 2;
+}
+
+message GetVenderInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // Table0 unwrap
+  // ベンダーコード
+  optional int32 vender_code = 3;
+  // ベンダー名
+  optional string vender_name = 4;
+}
+
+message GetJanVenderInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // 商品コード
+  optional string product_code = 2;
+}
+
+message GetJanVenderInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // Table0 unwrap
+  // ベンダーコード
+  optional int32 vender_code = 3;
+  // ベンダー名
+  optional string vender_name = 4;
+}
+
+message GetSlipInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+  // ベンダーコード
+  optional string vender_code = 2;
+  // 返品日 (空白可能)
+  optional common.v1.Date return_date = 3;
+}
+
+message GetSlipInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  repeated SlipInfo slip_info = 3;
+
+  message SlipInfo {
+    // 伝票番号
+    optional int32 slip_no = 1;
+    // ベンダー名
+    optional string supplier_name = 2;
+    // 返品日
+    optional string return_date = 3;
+    // 伝票の原価合計(合計)
+    optional double cost_sum = 4;
+    // 伝票の売価合計(合計)
+    optional double sales_sum = 5;
+    // 社員名
+    optional string employee_name = 6;
+    // 社員コード
+    optional string employee_code = 7;
+    // 印刷順番
+    optional int32 print_no_id = 8 [deprecated = true];
+  }
+}
+
+message InsertPrintSlipListRequest {
+  // 返品説明書を印刷するフラグ (既存 instructionFlg)
+  //  0: false 返品説明書印刷しない, 1: true 返品説明書印刷
+  optional bool is_instruction_print = 1;
+  // 伝票ID情報
+  // grpcの場合 ["社員番号1~伝票番号1,伝票番号2","社員番号2~伝票番号3"]
+  repeated EmployeeSlip employee_slip = 2;
+  // 店舗コード
+  optional string store_code = 3;
+  // ベンダーコード (空白可能)
+  optional string supplier_code = 4;
+
+  message EmployeeSlip {
+    optional string register = 1;
+    repeated int32 slip_no = 2;
+  }
+}
+
+message InsertPrintSlipListResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 印刷ID
+  optional int32 print_id = 3;
+}
+
+message GetGoodsInfoReissueRequest {
+  // 伝票番号
+  optional int32 slip_no = 1;
+  // 店舗コード
+  optional string store_code = 2;
+}
+
+message GetGoodsInfoReissueResponse {
+  optional string code = 1;
+  optional string message = 2;
+  repeated GoodsInfoReissue goods_info_reissue = 3;
+
+  message GoodsInfoReissue {
+    // 返品テーブルの連番ID
+    optional int32 id = 1;
+    // 商品コード
+    optional string prod_code = 2;
+    // 商品名
+    optional string prod_name = 3;
+    // カラー
+    optional string prod_color = 4 [deprecated = true];
+    // サイズ
+    optional string prod_size = 5 [deprecated = true];
+    // 返品日
+    optional string rev_date = 6;
+    // ベンダー名
+    optional string vender_name = 7;
+    // 返品数量
+    optional double quantity = 8;
+    // 返品理由
+    optional string reason_name = 9;
+    // 返品売価合計値
+    optional double sales_sum = 10;
+    // 売価
+    optional double sales_price = 11;
+  }
+}
+
+message UpdateReturnQtyReissueRequest {
+  // 返品テーブルの連番ID
+  optional int32 id = 1;
+  // 店舗コード
+  optional string store_code = 2;
+  // 修正したい返品数量
+  optional double return_qty = 3;
+}
+
+message UpdateReturnQtyReissueResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 今回修正したデータの件数
+  optional int32 pacer_reverse_updatereturnqty_reissue = 3;
+}
+
+message EndCheckRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message EndCheckResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 未印刷返品データ (既存 pacer_reverse_checkprintinfo)
+  // 1: true 返品データあり, 0: false 返品データなし
+  optional bool has_unprinted_return_data = 3;
+}
+
+message DelPrintInfoRequest {
+  // 店舗コード
+  optional string store_code = 1;
+}
+
+message DelPrintInfoResponse {
+  optional string code = 1;
+  optional string message = 2;
+  // 関数で固定値 = 1を返す
+  optional int32 pacer_reverse_delprintinfo_print_ver4 = 3;
+}

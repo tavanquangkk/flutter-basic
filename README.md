@@ -15,6 +15,34 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+
+フォルダー構成等
+lib/
+ ├── main.dart
+ ├── config/
+ │    ├── router.dart        # 画面遷移（GoRouter など）
+ │    └── di.dart            # 依存注入（gRPC Client など）
+ ├── core/
+ │    ├── constants/         # App名・色・定数
+ │    ├── theme/             # ダーク/ライトなど
+ │    └── utils/             # 共通関数
+ ├── data/
+ │    ├── models/            # データ構造（Protobuf生成クラス取得）
+ │    ├── grpc/              # gRPC Client実装
+ │    └── repositories/      # データ取得ロジック
+ ├── domain/
+ │    ├── entities/          # ビジネスルール（独立）
+ │    └── usecases/          # UIが使うビジネス操作
+ ├── presentation/
+ │    ├── pages/             # ✅ まずここから作る！
+ │    │    ├── home_page.dart
+ │    │    ├── add_expense_page.dart
+ │    │    └── expense_list_page.dart
+ │    ├── widgets/           # 再利用UIパーツ
+ │    └── state/             # Riverpod / Bloc / ChangeNotifierなど
+ └── generated/              # 🔹Protobufから自動生成
+
+
 1️⃣ ユーザー関連
 
 ログイン／サインアップ画面
