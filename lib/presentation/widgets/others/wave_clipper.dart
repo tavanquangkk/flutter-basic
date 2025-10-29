@@ -1,35 +1,40 @@
 import 'package:flutter/material.dart';
 
-abstract class WaveClipper extends CustomClipper<Path> {
+class WaveClipper extends CustomClipper<Path> {
   @override
   Path getPath(Size size) {
     var path = Path();
 
-    // パスの開始点 (左上)
-    path.lineTo(0, 0);
+    // 1. パスの開始点 (左上)
+    path.lineTo(0, size.height * 0.8); // 波の開始高さ (左端)
 
-    // 左端の線
-    path.lineTo(0, size.height * 0.85); // 左下の開始点 (少し上)
+    // --- 3次ベジェ曲線 (cubicTo) でS字カーブを描画 ---
 
-    // --- 波形のカーブ ---
-    // コントロールポイント（カーブの頂点）を画面中央の最下部に設定
-    var firstControlPoint = Offset(size.width / 2, size.height);
-    // カーブの終点を右端の同じ高さに設定
-    var firstEndPoint = Offset(size.width, size.height * 0.85);
+    // 2. 最初のコントロールポイント (左側のカーブの制御点)
+    //    X: 画面幅の 1/4,  Y: 波の頂点 (高さ 70%)
+    var firstControlPoint = Offset(size.width / 4, size.height * 0.7);
 
-    // 2次ベジェ曲線を描画
-    path.quadraticBezierTo(
+    // 3. 2番目のコントロールポイント (右側のカーブの制御点)
+    //    X: 画面幅の 3/4,  Y: 波の谷 (高さ 90%)
+    var secondControlPoint = Offset(size.width * (3 / 4), size.height * 0.9);
+
+    // 4. パスの終点 (右端)
+    //    X: 画面幅, Y: 終点の高さ (80%)
+    var endPoint = Offset(size.width, size.height * 0.8);
+
+    // 1 -> 2 -> 3 -> 4 を結ぶ滑らかなS字カーブを描画
+    path.cubicTo(
       firstControlPoint.dx,
       firstControlPoint.dy,
-      firstEndPoint.dx,
-      firstEndPoint.dy,
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      endPoint.dx,
+      endPoint.dy,
     );
 
-    // 右端の線
-    path.lineTo(size.width, size.height * 0.85);
-    path.lineTo(size.width, 0); // 右上に戻る
-
-    // パスを閉じる
+    // --- パスを閉じる ---
+    path.lineTo(size.width, 0); // 右上へ
+    path.lineTo(0, 0); // 左上へ
     path.close();
 
     return path;
@@ -37,6 +42,12 @@ abstract class WaveClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false; // 今回は静的なのでfalse
+    return false;
+  }
+
+  // 必須 (3)
+  @override
+  Path getClip(Size size) {
+    return getPath(size);
   }
 }
