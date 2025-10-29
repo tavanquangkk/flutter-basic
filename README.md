@@ -15,6 +15,7 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+```
 
 フォルダー構成等
 lib/
@@ -42,6 +43,8 @@ lib/
  │    └── state/             # Riverpod / Bloc / ChangeNotifierなど
  └── generated/              # 🔹Protobufから自動生成
 
+
+```
 
 1️⃣ ユーザー関連
 
